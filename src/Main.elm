@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (element)
+import Browser.Events exposing (onMouseDown)
 import Bulma.CDN exposing (stylesheet)
 import Bulma.Columns exposing (column, columnModifiers, columns, columnsModifiers)
 import Bulma.Components exposing (card, cardContent, cardHeader, cardIcon, cardTitle, dropdown, dropdownItem, dropdownMenu, dropdownModifiers, dropdownTrigger, message, messageBody)
@@ -10,8 +11,9 @@ import Bulma.Layout exposing (SectionSpacing(..), container, section)
 import Bulma.Modifiers exposing (Color(..), Size(..), shadowless)
 import Bulma.Modifiers.Typography exposing (textLeft)
 import Html exposing (Html, div, i, text)
-import Html.Attributes exposing (attribute, class)
+import Html.Attributes exposing (attribute, class, id)
 import Html.Events exposing (onCheck, onClick)
+import Json.Decode as Json
 
 
 
@@ -43,6 +45,7 @@ init =
 type Msg
     = ToggleMenu Menu
     | UpdateChoice Menu Int Bool
+    | OnClickOutside
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -61,6 +64,9 @@ update msg ({ open, selected } as model) =
 
             else
                 ( { model | selected = List.filter ((/=) ( menu, num )) selected }, Cmd.none )
+
+        OnClickOutside ->
+            ( { model | open = [] }, Cmd.none )
 
 
 
@@ -98,7 +104,7 @@ drop : Menu -> Bool -> Html Msg
 drop menu isMenuOpen =
     dropdown isMenuOpen
         dropdownModifiers
-        []
+        [ id "dropdown" ]
         [ dropTrigger menu
         , dropdownMenu []
             []
@@ -178,6 +184,50 @@ view model =
 
 
 
+---- SUBSCRIPTIONS ----
+
+
+outsideTarget : String -> Json.Decoder Msg
+outsideTarget elemId =
+    Json.field "target" (isOutside elemId)
+        |> Json.andThen
+            (\isOut ->
+                if isOut then
+                    Json.succeed OnClickOutside
+
+                else
+                    Json.fail "inside target element"
+            )
+
+
+isOutside : String -> Json.Decoder Bool
+isOutside elem =
+    Json.oneOf
+        [ Json.field "id" Json.string
+            |> Json.andThen
+                (\id ->
+                    if elem == id then
+                        Json.succeed False
+
+                    else
+                        Json.fail "check parent node"
+                )
+        , Json.lazy (\_ -> isOutside elem |> Json.field "parentNode")
+        , Json.succeed True
+        ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions { open } =
+    case open of
+        [] ->
+            Sub.none
+
+        _ ->
+            onMouseDown <| outsideTarget "dropdown"
+
+
+
 ---- PROGRAM ----
 
 
@@ -187,5 +237,5 @@ main =
         { view = view
         , init = always init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }

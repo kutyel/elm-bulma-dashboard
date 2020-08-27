@@ -1,40 +1,6 @@
 [data-elm-hot="true"] {
   height: inherit;
 }
-body {
-  font-family: "Source Sans Pro", "Trebuchet MS", "Lucida Grande",
-    "Bitstream Vera Sans", "Helvetica Neue", sans-serif;
-  margin: 0;
-  text-align: center;
-  color: #e5e7ec;
-}
-.message-body .card {
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-.message-body {
-  background-color: #e5e7ec;
-}
-.column > .message.is-white {
-  background-color: transparent;
-}
-.message.is-white > div {
-  border: none;
-}
-.message > .message-body {
-  padding: 0;
-  border-radius: 20px;
-  background-color: #e5e7ec;
-}
-.section > h5 {
-  font-weight: bold;
-}
-.section > .subtitle.is-5 {
-  margin-bottom: 0;
-}
-.dropdown-trigger > a > span {
-  font-weight: bold;
-}
 .card {
   border-radius: 20px;
 }
@@ -44,9 +10,33 @@ body {
 .card > .card-content,
 .card > .card-content > .has-text-left {
   padding: 0 0 0 7px;
-}
-.card-content {
   height: 300px;
+}
+.column > .message.is-white {
+  background-color: transparent;
+}
+.dropdown.is-active > .dropdown-trigger > .button {
+  color: white;
+  background-color: #1b2d5b;
+}
+.dropdown-trigger > a > span {
+  font-weight: bold;
+}
+.message > .message-body {
+  padding: 0;
+  border-radius: 20px;
+  background-color: #e5e7ec;
+}
+.message.is-white > div {
+  border: none;
+}
+.message-body .card {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.section > .subtitle.is-5 {
+  margin-bottom: 0;
+  font-weight: bold;
 }
 .submenus > .card {
   height: 200px;
@@ -54,8 +44,4 @@ body {
 .submenus.section {
   padding-top: 20px;
   padding-bottom: 0;
-}
-.dropdown.is-active > .dropdown-trigger > .button {
-  color: white;
-  background-color: #1b2d5b;
 }
