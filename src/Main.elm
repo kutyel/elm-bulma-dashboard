@@ -21,7 +21,7 @@ import Json.Decode as Json
 
 
 type alias Model =
-    { open : List Menu
+    { open : Maybe Menu
     , selected : List ( Menu, Int )
     }
 
@@ -35,7 +35,7 @@ type Menu
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model [] [], Cmd.none )
+    ( Model Nothing [], Cmd.none )
 
 
 
@@ -49,24 +49,29 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ open, selected } as model) =
+update msg model =
     case msg of
         ToggleMenu menu ->
-            if List.member menu open then
-                ( { model | open = List.filter ((/=) menu) open }, Cmd.none )
+            case model.open of
+                Nothing ->
+                    ( { model | open = Just menu }, Cmd.none )
 
-            else
-                ( { model | open = menu :: open }, Cmd.none )
+                Just m ->
+                    if m == menu then
+                        ( { model | open = Nothing }, Cmd.none )
+
+                    else
+                        ( { model | open = Just menu }, Cmd.none )
 
         UpdateChoice menu num checked ->
             if checked then
-                ( { model | selected = ( menu, num ) :: selected }, Cmd.none )
+                ( { model | selected = ( menu, num ) :: model.selected }, Cmd.none )
 
             else
-                ( { model | selected = List.filter ((/=) ( menu, num )) selected }, Cmd.none )
+                ( { model | selected = List.filter ((/=) ( menu, num )) model.selected }, Cmd.none )
 
         OnClickOutside ->
-            ( { model | open = [] }, Cmd.none )
+            ( { model | open = Nothing }, Cmd.none )
 
 
 
@@ -115,7 +120,7 @@ drop menu isMenuOpen =
 
 
 viewCard : String -> Bool -> Model -> Menu -> Html Msg
-viewCard title shadow model menu =
+viewCard title shadow { open, selected } menu =
     card
         (if shadow then
             []
@@ -126,13 +131,12 @@ viewCard title shadow model menu =
         [ cardHeader []
             [ cardTitle [] [ text title ]
             , cardIcon []
-                [ drop menu <| List.member menu model.open
-                ]
+                [ drop menu (open |> Maybe.map (\m -> m == menu) |> Maybe.withDefault False) ]
             ]
         , cardContent []
             [ column columnModifiers
                 [ textLeft ]
-                [ case List.filter (\( m, _ ) -> m == menu) model.selected of
+                [ case List.filter (\( m, _ ) -> m == menu) selected of
                     [] ->
                         text ""
 
@@ -220,10 +224,10 @@ isOutside elem =
 subscriptions : Model -> Sub Msg
 subscriptions { open } =
     case open of
-        [] ->
+        Nothing ->
             Sub.none
 
-        _ ->
+        Just _ ->
             onMouseDown <| outsideTarget "dropdown"
 
 
