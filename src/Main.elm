@@ -42,7 +42,8 @@ init =
 
 
 type Msg
-    = ToggleMenu Menu
+    = NoOp
+    | ToggleMenu Menu
     | UpdateChoice Menu Int
     | OnClickOutside
 
@@ -50,6 +51,9 @@ type Msg
 update : Msg -> Model -> Model
 update msg model =
     case msg of
+        NoOp ->
+            model
+
         ToggleMenu menu ->
             case model.open of
                 Nothing ->
@@ -77,6 +81,11 @@ update msg model =
 ---- VIEW ----
 
 
+onClickAndStop : a -> Html.Attribute a
+onClickAndStop msg =
+    stopPropagationOn "click" <| Json.succeed ( msg, True )
+
+
 dropTrigger : Menu -> Html Msg
 dropTrigger menu =
     dropdownTrigger []
@@ -86,7 +95,7 @@ dropTrigger menu =
                 , rounded = True
                 , iconRight = Just ( Large, [], i [ class "fas fa-chevron-down" ] [] )
             }
-            [ stopPropagationOn "click" (Json.map (\m -> ( m, True )) (Json.succeed <| ToggleMenu menu))
+            [ onClickAndStop <| ToggleMenu menu
             , attribute "aria-haspopup" "true"
             , attribute "aria-controls" "dropdown-menu"
             ]
@@ -106,8 +115,13 @@ drop menu isMenuOpen =
                 |> List.map
                     (\num ->
                         dropdownItem False
-                            [ stopPropagationOn "click" (Json.map (\m -> ( m, True )) (Json.succeed <| UpdateChoice menu num)) ]
-                            [ controlCheckBox False [] [] [] [ text <| "Option " ++ String.fromInt num ] ]
+                            []
+                            [ controlCheckBox False
+                                []
+                                [ onClickAndStop <| UpdateChoice menu num ]
+                                [ onClickAndStop <| NoOp ]
+                                [ text <| "Option " ++ String.fromInt num ]
+                            ]
                     )
             )
         ]
