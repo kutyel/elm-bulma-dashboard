@@ -1,7 +1,6 @@
 module Main exposing (main)
 
-import Browser exposing (element)
-import Browser.Events exposing (onMouseDown)
+import Browser exposing (sandbox)
 import Bulma.CDN exposing (stylesheet)
 import Bulma.Columns exposing (column, columnModifiers, columns, columnsModifiers)
 import Bulma.Components exposing (card, cardContent, cardHeader, cardIcon, cardTitle, dropdown, dropdownItem, dropdownMenu, dropdownModifiers, dropdownTrigger, message, messageBody)
@@ -12,7 +11,7 @@ import Bulma.Modifiers exposing (Color(..), Size(..), shadowless)
 import Bulma.Modifiers.Typography exposing (textLeft)
 import Html exposing (Html, div, i, text)
 import Html.Attributes exposing (attribute, class, id)
-import Html.Events exposing (onCheck, onClick)
+import Html.Events exposing (onClick, stopPropagationOn)
 import Json.Decode as Json
 
 
@@ -33,9 +32,9 @@ type Menu
     | Category3
 
 
-init : ( Model, Cmd Msg )
+init : Model
 init =
-    ( Model Nothing [], Cmd.none )
+    Model Nothing []
 
 
 
@@ -43,39 +42,48 @@ init =
 
 
 type Msg
-    = ToggleMenu Menu
-    | UpdateChoice Menu Int Bool
+    = NoOp
+    | ToggleMenu Menu
+    | UpdateChoice Menu Int
     | OnClickOutside
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> Model
 update msg model =
     case msg of
+        NoOp ->
+            model
+
         ToggleMenu menu ->
             case model.open of
                 Nothing ->
-                    ( { model | open = Just menu }, Cmd.none )
+                    { model | open = Just menu }
 
                 Just m ->
                     if m == menu then
-                        ( { model | open = Nothing }, Cmd.none )
+                        { model | open = Nothing }
 
                     else
-                        ( { model | open = Just menu }, Cmd.none )
+                        { model | open = Just menu }
 
-        UpdateChoice menu num checked ->
-            if checked then
-                ( { model | selected = ( menu, num ) :: model.selected }, Cmd.none )
+        UpdateChoice menu num ->
+            if List.any (\( m, n ) -> m == menu && n == num) model.selected then
+                { model | selected = List.filter ((/=) ( menu, num )) model.selected }
 
             else
-                ( { model | selected = List.filter ((/=) ( menu, num )) model.selected }, Cmd.none )
+                { model | selected = ( menu, num ) :: model.selected }
 
         OnClickOutside ->
-            ( { model | open = Nothing }, Cmd.none )
+            { model | open = Nothing }
 
 
 
 ---- VIEW ----
+
+
+onClickAndStop : a -> Html.Attribute a
+onClickAndStop msg =
+    stopPropagationOn "click" <| Json.succeed ( msg, True )
 
 
 dropTrigger : Menu -> Html Msg
@@ -87,22 +95,12 @@ dropTrigger menu =
                 , rounded = True
                 , iconRight = Just ( Large, [], i [ class "fas fa-chevron-down" ] [] )
             }
-            [ onClick <| ToggleMenu menu
+            [ onClickAndStop <| ToggleMenu menu
             , attribute "aria-haspopup" "true"
             , attribute "aria-controls" "dropdown-menu"
             ]
-            [ text "COMPARE"
-            ]
+            [ text "COMPARE" ]
         ]
-
-
-checkBox : Menu -> Int -> Html Msg
-checkBox menu num =
-    controlCheckBox False
-        []
-        []
-        [ onCheck <| UpdateChoice menu num ]
-        [ text <| "Option " ++ String.fromInt num ]
 
 
 drop : Menu -> Bool -> Html Msg
@@ -114,7 +112,17 @@ drop menu isMenuOpen =
         , dropdownMenu []
             []
             (List.range 1 10
-                |> List.map (\check -> dropdownItem False [] [ checkBox menu check ])
+                |> List.map
+                    (\num ->
+                        dropdownItem False
+                            []
+                            [ controlCheckBox False
+                                []
+                                [ onClickAndStop <| UpdateChoice menu num ]
+                                [ onClickAndStop <| NoOp ]
+                                [ text <| "Option " ++ String.fromInt num ]
+                            ]
+                    )
             )
         ]
 
@@ -154,7 +162,7 @@ viewCard title shadow { open, selected } menu =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div (Maybe.withDefault [] <| Maybe.map (List.singleton << onClick << OnClickOutside) model.open)
         [ stylesheet
         , section NotSpaced
             []
@@ -188,58 +196,9 @@ view model =
 
 
 
----- SUBSCRIPTIONS ----
-
-
-outsideTarget : String -> Json.Decoder Msg
-outsideTarget elemId =
-    Json.field "target" (isOutside elemId)
-        |> Json.andThen
-            (\isOut ->
-                if isOut then
-                    Json.succeed OnClickOutside
-
-                else
-                    Json.fail "inside target element"
-            )
-
-
-isOutside : String -> Json.Decoder Bool
-isOutside elem =
-    Json.oneOf
-        [ Json.field "id" Json.string
-            |> Json.andThen
-                (\id ->
-                    if elem == id then
-                        Json.succeed False
-
-                    else
-                        Json.fail "check parent node"
-                )
-        , Json.lazy (\_ -> isOutside elem |> Json.field "parentNode")
-        , Json.succeed True
-        ]
-
-
-subscriptions : Model -> Sub Msg
-subscriptions { open } =
-    case open of
-        Nothing ->
-            Sub.none
-
-        Just _ ->
-            onMouseDown <| outsideTarget "dropdown"
-
-
-
 ---- PROGRAM ----
 
 
 main : Program () Model Msg
 main =
-    element
-        { view = view
-        , init = always init
-        , update = update
-        , subscriptions = subscriptions
-        }
+    sandbox { view = view, init = init, update = update }
