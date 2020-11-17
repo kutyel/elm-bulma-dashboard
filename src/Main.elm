@@ -162,14 +162,7 @@ viewCard title shadow { open, selected } menu =
 
 view : Model -> Html Msg
 view model =
-    div
-        (case model.open of
-            Nothing ->
-                []
-
-            Just _ ->
-                [ onClick OnClickOutside ]
-        )
+    div (Maybe.withDefault [] <| Maybe.map (List.singleton << onClick << OnClickOutside) model.open)
         [ stylesheet
         , section NotSpaced
             []
