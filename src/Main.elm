@@ -11,7 +11,7 @@ import Bulma.Modifiers exposing (Color(..), Size(..), shadowless)
 import Bulma.Modifiers.Typography exposing (textLeft)
 import Html exposing (Html, div, i, text)
 import Html.Attributes exposing (attribute, class, id)
-import Html.Events exposing (custom, onClick, stopPropagationOn)
+import Html.Events exposing (onClick, stopPropagationOn)
 import Json.Decode as Json
 
 
@@ -94,17 +94,6 @@ dropTrigger menu =
         ]
 
 
-checkBox : Menu -> Int -> Html Msg
-checkBox menu num =
-    controlCheckBox False
-        []
-        []
-        -- TODO: this keeps being propagated even with a "custom" event :(
-        [ stopPropagationOn "input" (Json.map (\m -> ( m, True )) (Json.succeed <| UpdateChoice menu num))
-        ]
-        [ text <| "Option " ++ String.fromInt num ]
-
-
 drop : Menu -> Bool -> Html Msg
 drop menu isMenuOpen =
     dropdown isMenuOpen
@@ -114,7 +103,12 @@ drop menu isMenuOpen =
         , dropdownMenu []
             []
             (List.range 1 10
-                |> List.map (\check -> dropdownItem False [] [ checkBox menu check ])
+                |> List.map
+                    (\num ->
+                        dropdownItem False
+                            [ stopPropagationOn "click" (Json.map (\m -> ( m, True )) (Json.succeed <| UpdateChoice menu num)) ]
+                            [ controlCheckBox False [] [] [] [ text <| "Option " ++ String.fromInt num ] ]
+                    )
             )
         ]
 
