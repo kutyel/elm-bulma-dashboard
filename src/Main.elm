@@ -67,7 +67,7 @@ update msg model =
                         { model | open = Just menu }
 
         UpdateChoice menu num ->
-            if List.any (\( m, n ) -> m == menu && n == num) model.selected then
+            if List.any ((==) ( menu, num )) model.selected then
                 { model | selected = List.filter ((/=) ( menu, num )) model.selected }
 
             else
@@ -138,8 +138,7 @@ viewCard title shadow { open, selected } menu =
         )
         [ cardHeader []
             [ cardTitle [] [ text title ]
-            , cardIcon []
-                [ drop menu (open |> Maybe.map (\m -> m == menu) |> Maybe.withDefault False) ]
+            , cardIcon [] [ drop menu (open |> Maybe.map ((==) menu) |> Maybe.withDefault False) ]
             ]
         , cardContent []
             [ column columnModifiers
@@ -162,7 +161,7 @@ viewCard title shadow { open, selected } menu =
 
 view : Model -> Html Msg
 view model =
-    div (Maybe.withDefault [] <| Maybe.map (List.singleton << onClick << OnClickOutside) model.open)
+    div (Maybe.withDefault [] <| Maybe.map (List.singleton << onClick << always OnClickOutside) model.open)
         [ stylesheet
         , section NotSpaced
             []
