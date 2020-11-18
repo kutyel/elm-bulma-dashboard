@@ -4,9 +4,16 @@
 
 A playground with `elm-bulma` 💅🏼
 
-## Usage
+## Run the App!
 
 ```sh
 $ npm install -g create-elm-app
 $ elm-app start
+```
+
+Or you can use Nix:
+
+```sh
+$ nix-build
+$ chromium ./result/index.html
 ```
